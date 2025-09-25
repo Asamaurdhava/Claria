@@ -214,6 +214,12 @@ Requirements:
 
 MIT License - Because knowledge should be free. See [LICENSE](LICENSE) file.
 
+## ▸ Author
+
+**Vishesh Singh Rajput**
+- GitHub: [@specstan](https://github.com/specstan)
+- Built with passion for the Google Chrome AI Challenge 2025
+
 ## ▸ Acknowledgments
 
 - **Google Chrome Team** → For building the future of on-device AI
