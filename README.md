@@ -216,8 +216,9 @@ MIT License - Because knowledge should be free. See [LICENSE](LICENSE) file.
 
 ## ▸ Author
 
-**Vishesh Singh Rajput**
-- GitHub: [@specstan](https://github.com/specstan)
+**Vishesh Singh Rajput aka specstan**
+- GitHub: [@specstan](https://github.com/Asamaurdhava/Asamaurdhava)
+- X: [atspecstan](https://x.com/atspecstan)
 - Built with passion for the Google Chrome AI Challenge 2025
 
 ## ▸ Acknowledgments
