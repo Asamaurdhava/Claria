@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Claria - Transform complex text into clear, simple language using Chrome's built-in AI">
+    <meta name="keywords" content="text simplification, AI, Chrome AI, document clarification, accessibility">
+    <title>Claria - Complex Text Made Simple</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Matangi:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="src/styles.css">
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 800 200'%3E%3Ctext x='400' y='150' font-size='300' font-family='Matangi' font-weight='bold' fill='%232b7fff' text-anchor='middle'%3EClaria%3C/text%3E%3C/svg%3E">
+</head>
+<body>
+    <div class="app-wrapper">
+        <!-- Header -->
+        <header>
+            <div class="container">
+                <div class="header-content">
+                    <div class="logo">
+                        <div>
+                            <h1>Claria</h1>
+                            <p class="tagline">Complex text made crystal clear</p>
+                        </div>
+                    </div>
+
+                    <div id="ai-status" class="ai-status" aria-live="polite">
+                        <div class="status-dot"></div>
+                        <span id="status-text">Initializing...</span>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main>
+            <div class="container">
+                <div class="content-wrapper">
+
+                    <!-- Input Card -->
+                    <div class="input-card">
+                        <div class="section-header">
+                            <h2 class="section-title">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                                    <polyline points="14,2 14,8 20,8"/>
+                                    <line x1="16" y1="13" x2="8" y2="13"/>
+                                    <line x1="16" y1="17" x2="8" y2="17"/>
+                                    <polyline points="10,9 9,9 8,9"/>
+                                </svg>
+                                Document Input
+                            </h2>
+                        </div>
+
+                        <!-- Document Type Pills -->
+                        <div class="doc-types" role="tablist" aria-label="Document types">
+                            <button class="type-pill active" data-type="auto" role="tab" aria-selected="true" id="tab-auto">
+                                <img src="https://img.icons8.com/ios-filled/32/rfid-signal.png" alt="Auto-detect" width="18" height="18">
+                                Auto-detect
+                            </button>
+                            <button class="type-pill" data-type="legal" role="tab" aria-selected="false" id="tab-legal">
+                                <img src="https://img.icons8.com/ios-filled/32/law.png" alt="Legal" width="18" height="18">
+                                Legal
+                            </button>
+                            <button class="type-pill" data-type="medical" role="tab" aria-selected="false" id="tab-medical">
+                                <img src="https://img.icons8.com/ios-filled/32/health-book.png" alt="Medical" width="18" height="18">
+                                Medical
+                            </button>
+                            <button class="type-pill" data-type="technical" role="tab" aria-selected="false" id="tab-technical">
+                                <img src="https://img.icons8.com/ios11/32/computer-support.png" alt="Technical" width="18" height="18">
+                                Technical
+                            </button>
+                            <button class="type-pill" data-type="academic" role="tab" aria-selected="false" id="tab-academic">
+                                <svg viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82zM12 3L1 9l11 6 9-4.91V17h2V9L12 3z"/>
+                                </svg>
+                                Academic
+                            </button>
+                            <button class="type-pill" data-type="financial" role="tab" aria-selected="false" id="tab-financial">
+                                <img src="https://img.icons8.com/ios-filled/32/rupee.png" alt="Financial" width="18" height="18">
+                                Financial
+                            </button>
+                        </div>
+
+                        <!-- Text Input -->
+                        <div class="input-wrapper">
+                            <label for="input" class="visually-hidden">Enter text to clarify</label>
+                            <textarea
+                                id="input"
+                                placeholder="Paste your complex text here... (Try legal contracts, medical reports, technical documentation, etc.)"
+                                maxlength="10000"
+                                aria-label="Input text to clarify"
+                                aria-describedby="char-count input-help"></textarea>
+                            <div class="input-footer">
+                                <div id="char-count" class="char-count">0 / 10,000</div>
+                                <div id="input-help" class="input-help">
+                                    <kbd>Ctrl</kbd> + <kbd>Enter</kbd> to clarify
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Complexity Selector -->
+                        <div class="complexity-section">
+                            <label class="complexity-label">Simplification Level</label>
+                            <div class="complexity-options">
+                                <div class="complexity-card selected">
+                                    <input type="radio" name="level" value="simple" checked id="level-simple">
+                                    <label for="level-simple">
+                                        <div class="complexity-title">Elementary</div>
+                                        <div class="complexity-desc">Easy for ages 10+</div>
+                                    </label>
+                                </div>
+                                <div class="complexity-card">
+                                    <input type="radio" name="level" value="standard" id="level-standard">
+                                    <label for="level-standard">
+                                        <div class="complexity-title">High School</div>
+                                        <div class="complexity-desc">Clear for teenagers</div>
+                                    </label>
+                                </div>
+                                <div class="complexity-card">
+                                    <input type="radio" name="level" value="educated" id="level-educated">
+                                    <label for="level-educated">
+                                        <div class="complexity-title">College</div>
+                                        <div class="complexity-desc">Simplified for adults</div>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Action Button -->
+                        <div class="action-section">
+                            <button id="clarify-btn" class="primary-btn">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="12" cy="12" r="5"/>
+                                    <line x1="12" y1="1" x2="12" y2="3"/>
+                                    <line x1="12" y1="21" x2="12" y2="23"/>
+                                    <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+                                    <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+                                    <line x1="1" y1="12" x2="3" y2="12"/>
+                                    <line x1="21" y1="12" x2="23" y2="12"/>
+                                    <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+                                    <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+                                </svg>
+                                Clarify Text
+                            </button>
+                            <div class="btn-help">
+                                Uses Chrome's built-in AI <span id="availability-info" class="availability-link">when available</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Processing State -->
+                    <div id="processing" class="processing hidden" aria-live="polite">
+                        <div class="spinner"></div>
+                        <span id="processing-text">Processing with Chrome AI...</span>
+                    </div>
+
+                    <!-- Output Card -->
+                    <div id="output-section" class="output-section hidden" aria-live="polite">
+                        <div class="output-card">
+                            <div class="output-header">
+                                <h2 class="section-title">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <polyline points="9,11 12,14 22,4"/>
+                                        <path d="M21,12v7a2,2 0 0,1 -2,2H5a2,2 0 0,1 -2,-2V5a2,2 0 0,1 2,-2h11"/>
+                                    </svg>
+                                    Clarified Version
+                                </h2>
+                            </div>
+
+                            <div id="output" class="output-text" tabindex="0" aria-label="Clarified text result"></div>
+
+                            <!-- Action Buttons -->
+                            <div class="output-actions">
+                                <button id="copy-btn" class="action-btn" aria-describedby="copy-help">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                                        <path d="M5,15H4a2,2 0 0,1 -2,-2V4a2,2 0 0,1 2,-2H13a2,2 0 0,1 2,2v1"/>
+                                    </svg>
+                                    Copy
+                                </button>
+                                <button id="download-btn" class="action-btn" aria-describedby="download-help">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M21,15v4a2,2 0 0,1 -2,2H5a2,2 0 0,1 -2,-2v-4"/>
+                                        <polyline points="7,10 12,15 17,10"/>
+                                        <line x1="12" y1="15" x2="12" y2="3"/>
+                                    </svg>
+                                    Download
+                                </button>
+                                <button id="speak-btn" class="action-btn" aria-describedby="speak-help">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <polygon points="11,5 6,9 2,9 2,15 6,15 11,19 11,5"/>
+                                        <path d="M19.07,4.93a10,10 0 0,1 0,14.14M15.54,8.46a5,5 0 0,1 0,7.07"/>
+                                    </svg>
+                                    Listen
+                                </button>
+                            </div>
+
+                            <!-- Metrics -->
+                            <div class="metrics-grid">
+                                <div class="metric-card">
+                                    <div class="metric-label">Original Length</div>
+                                    <div id="original-length" class="metric-value">-</div>
+                                </div>
+                                <div class="metric-card">
+                                    <div class="metric-label">Clarified Length</div>
+                                    <div id="clarified-length" class="metric-value">-</div>
+                                </div>
+                                <div class="metric-card">
+                                    <div class="metric-label">Processing Time</div>
+                                    <div id="processing-time" class="metric-value">-</div>
+                                </div>
+                                <div class="metric-card">
+                                    <div class="metric-label">AI Engine</div>
+                                    <div id="ai-engine" class="metric-value">-</div>
+                                </div>
+                            </div>
+
+                            <!-- Key Points -->
+                            <div class="keypoints-section">
+                                <h3 class="keypoints-title">
+                                    <svg class="keypoints-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <circle cx="9" cy="12" r="1"/>
+                                        <circle cx="9" cy="5" r="1"/>
+                                        <circle cx="9" cy="19" r="1"/>
+                                        <path d="M22,12h-4"/>
+                                        <path d="M22,5h-4"/>
+                                        <path d="M22,19h-4"/>
+                                    </svg>
+                                    All Key Points
+                                </h3>
+                                <ul id="keypoints-list" class="keypoints-list"></ul>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer>
+            <div class="container">
+                <div class="footer-content">
+                    <div class="footer-brand">
+                        <div class="footer-status">
+                            Ready
+                        </div>
+                        <span class="powered-by">Powered by Chrome's Built-in AI</span>
+                    </div>
+
+                    <div class="footer-links">
+                        <a href="#about" class="footer-link">About</a>
+                        <a href="#privacy" class="footer-link">Privacy</a>
+                        <a href="https://googlechromeai2025.devpost.com/" target="_blank" class="footer-link" rel="noopener">
+                            Chrome AI Challenge 2025
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Hidden Examples Data -->
+    <script type="application/json" id="examples-data">
+    {
+        "legal": "WHEREAS, the Party of the First Part (hereinafter referred to as 'Licensor') hereby grants to the Party of the Second Part (hereinafter referred to as 'Licensee') a non-exclusive, non-transferable license to use the aforementioned intellectual property, subject to the terms and conditions hereinafter set forth, notwithstanding any prior agreements to the contrary...",
+        "medical": "Patient presents with acute myocardial infarction with ST-elevation in leads II, III, and aVF, indicating inferior wall involvement. Concomitant reciprocal changes noted in precordial leads V1-V3. Cardiac biomarkers demonstrate significant elevation: Troponin I 15.2 ng/mL (normal <0.04), CK-MB 45 U/L (normal 0-6.3). Echocardiographic assessment reveals hypokinesis of the inferior wall with estimated ejection fraction of 45%...",
+        "technical": "The REST API utilizes OAuth 2.0 authentication protocol with PKCE (Proof Key for Code Exchange) extension for enhanced security in single-page applications. Implementation requires generation of a cryptographically random code verifier, subsequent SHA256 hashing to derive the code challenge, and transmission via the authorization endpoint with appropriate CORS headers and Content Security Policy directives..."
+    }
+    </script>
+
+    <!-- Modals -->
+    <div id="about-modal" class="modal hidden">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>About Claria</h2>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p><strong>Claria</strong> transforms complex documents into clear, simple language using Chrome's built-in AI capabilities.</p>
+
+                <h3>Features</h3>
+                <ul>
+                    <li><strong>Multi-document support:</strong> Legal, Medical, Technical, Academic, and Financial texts</li>
+                    <li><strong>Complexity levels:</strong> Elementary, High School, and College reading levels</li>
+                    <li><strong>Chrome AI powered:</strong> Uses Language Model, Writer, Rewriter, and Summarizer APIs</li>
+                    <li><strong>Smart fallback:</strong> Works even without Chrome AI</li>
+                    <li><strong>Key point extraction:</strong> Automatically highlights important information</li>
+                </ul>
+
+                <h3>Chrome AI Challenge 2025</h3>
+                <p>Built for Google's Chrome AI Challenge 2025 to showcase the power of browser-native AI capabilities.</p>
+
+                <div class="version-info">
+                    <p><strong>Version:</strong> 1.0.0</p>
+                    <p><strong>Author:</strong> Vishesh Singh Rajput aka specstan (Claria Team)</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="privacy-modal" class="modal hidden">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Privacy Policy</h2>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <h3>Data Processing</h3>
+                <p>Claria processes your text locally in your browser using Chrome's built-in AI APIs. Your documents never leave your device.</p>
+
+                <h3>What We Collect</h3>
+                <ul>
+                    <li><strong>No personal data:</strong> We don't collect names, emails, or personal information</li>
+                    <li><strong>No document storage:</strong> Your text is processed in real-time and not saved</li>
+                    <li><strong>No tracking:</strong> We don't use analytics or tracking cookies</li>
+                </ul>
+
+                <h3>Chrome AI Usage</h3>
+                <p>When Chrome AI is available, your text is processed using Google's on-device language models. This processing happens locally on your machine.</p>
+
+                <h3>Third-party Services</h3>
+                <p>Icons are loaded from Icons8 CDN. No user data is shared with Icons8.</p>
+
+                <h3>Data Security</h3>
+                <p>Since all processing happens locally in your browser, your sensitive documents remain private and secure on your device.</p>
+
+                <p class="last-updated"><em>Last updated: September 2025</em></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chrome AI Availability Modal -->
+    <div id="ai-availability-modal" class="modal hidden">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Chrome AI Availability</h2>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <h3>What is Chrome's Built-in AI?</h3>
+                <p>Chrome's built-in AI uses <strong>Gemini Nano</strong> running locally on your device for privacy-focused text processing.</p>
+
+                <h3>Device Compatibility</h3>
+                <p><strong>Currently Available:</strong></p>
+                <ul>
+                    <li>Intel-based devices (x86_64 architecture)</li>
+                    <li>Chrome version 121+ with AI features enabled</li>
+                    <li>Sufficient device memory and storage</li>
+                </ul>
+
+                <p><strong>Not Yet Available:</strong></p>
+                <ul>
+                    <li>Apple M1/M2/M3 ARM64 processors</li>
+                    <li>Mobile devices (iOS/Android)</li>
+                    <li>Older Chrome versions</li>
+                </ul>
+
+                <h3>Claria's Smart Solution</h3>
+                <p>Claria automatically detects your device capabilities:</p>
+                <ul>
+                    <li><strong>Chrome AI Available:</strong> Uses Gemini Nano for advanced processing</li>
+                    <li><strong>Chrome AI Unavailable:</strong> Uses our sophisticated fallback engine</li>
+                </ul>
+
+                <div class="ai-status-info">
+                    <p><strong>Your Current Status:</strong></p>
+                    <div id="current-ai-status" class="status-indicator">
+                        <span class="status-dot"></span>
+                        <span id="status-message">Checking...</span>
+                    </div>
+                </div>
+
+                <h3>Why This Matters for Judges</h3>
+                <p>This demonstrates:</p>
+                <ul>
+                    <li><strong>Universal Compatibility:</strong> Works on all devices, not just Intel processors</li>
+                    <li><strong>Robust Architecture:</strong> Seamless fallback when AI isn't available</li>
+                    <li><strong>Real-world Ready:</strong> Handles current Chrome AI limitations gracefully</li>
+                    <li><strong>Future-proof:</strong> Ready to utilize Chrome AI as it becomes more widely available</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Application -->
+    <script src="src/app.js"></script>
+</body>
+</html>
