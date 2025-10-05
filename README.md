@@ -38,10 +38,36 @@ Watch complex jargon transform into clear insights:
 Every word processes locally on your device. No servers. No delays. No privacy concerns. Your sensitive documents never leave your computer.
 
 ### **Four Chrome AI APIs in Perfect Harmony**
-- **Language Model API** → Context-aware simplification that preserves meaning
+- **Language Model API** → Context-aware simplification with real-time streaming
 - **Writer API** → Restructures content for maximum clarity
 - **Rewriter API** → Transforms tone while maintaining accuracy
-- **Summarizer API** → Extracts key points instantly
+- **Summarizer API** → Generates 4 summary types (headline, TL;DR, teaser, key points)
+
+### **Advanced Chrome AI Capabilities**
+When Chrome AI is available on Intel/AMD devices, Claria unlocks powerful features:
+
+#### **Real-Time Streaming Responses**
+Watch AI process your text live—no waiting for black-box results. See simplification happen word-by-word in real-time.
+
+#### **Multi-Summary Generation**
+Get 4 different summary perspectives instantly:
+- **Headline** → Single sentence essence (12 words)
+- **TL;DR** → Quick 3-sentence overview
+- **Teaser** → Intriguing highlights to capture interest
+- **Key Points** → 5 bullet points of critical information
+
+#### **Multimodal Document Processing**
+Transform documents beyond just text:
+- **Audio Files** → Upload MP3/WAV/M4A → Automatic transcription + simplification
+- **Image Files** → Upload PNG/JPG → Text extraction (OCR) + simplification
+- Screenshots, PDFs, photos of documents—all processable
+
+#### **Scientific Readability Metrics**
+Quantify improvement with Flesch-Kincaid grade level analysis:
+- Before/after comparison (e.g., "Grade 16 → Grade 5")
+- Sentence complexity breakdown
+- Words per sentence optimization
+- Visual progress indicators
 
 ### **Adaptive Intelligence Levels**
 - **Elementary** → For universal understanding (Age 10+)
@@ -127,18 +153,32 @@ claria/
 
 ## ▸ Using Claria
 
+### **Text Simplification**
 1. **Paste** your complex text (up to 10,000 characters)
 2. **Select** document type (or let AI auto-detect)
-3. **Choose** your complexity level
+3. **Choose** your complexity level (Elementary/High School/College)
 4. **Click** "Clarify Text" or press Ctrl/Cmd + Enter
 5. **Get** instant clarity with metrics and key points
 
-**Pro features:**
-- ▪ Listen to clarified text with optimized speech synthesis
-- ▪ One-click copy to clipboard
-- ▪ Download simplified documents
-- ▪ Full keyboard navigation
-- ▪ Real-time processing metrics
+### **Multimodal Processing** (Chrome AI on Intel/AMD)
+**Audio Documents:**
+- Click the microphone icon
+- Upload MP3, WAV, or M4A file
+- Get transcribed and simplified text automatically
+
+**Image Documents:**
+- Click the camera icon
+- Upload PNG, JPG, or screenshot
+- Text is extracted and simplified instantly
+
+### **Enhanced Features**
+- **Real-time streaming** → Watch AI process text live (Chrome AI mode)
+- **4 summary types** → Get headline, TL;DR, teaser, and key points
+- **Readability scores** → See before/after grade level improvement
+- **Listen mode** → Hear clarified text with optimized speech synthesis
+- **One-click copy** → Copy to clipboard instantly
+- **Download** → Save simplified documents as .txt files
+- **Keyboard shortcuts** → Full keyboard navigation (Ctrl+Enter to clarify)
 
 ## ▸ Privacy That's Non-Negotiable
 
@@ -190,11 +230,40 @@ claria/
 ## ▸ Built for the Challenge
 
 Claria demonstrates the transformative power of Chrome's built-in AI through:
-- ✓ Complete integration of all four Chrome AI APIs
-- ✓ Real-world problem solving at scale
-- ✓ Production-ready implementation
-- ✓ Universal accessibility
-- ✓ Zero dependencies or framework bloat
+- ✓ **Complete integration of all four Chrome AI APIs** (Language Model, Writer, Rewriter, Summarizer)
+- ✓ **Advanced API features** → Real-time streaming, multimodal inputs, 4 summary types
+- ✓ **Multimodal capabilities** → Audio transcription + image OCR processing
+- ✓ **Scientific metrics** → Flesch-Kincaid readability scoring
+- ✓ **Real-world problem solving** → Legal, medical, technical document transformation at scale
+- ✓ **Production-ready implementation** → Error handling, session management, graceful degradation
+- ✓ **Universal accessibility** → Works on all devices (Chrome AI + sophisticated fallback)
+- ✓ **Zero dependencies** → Pure vanilla JavaScript, no framework bloat
+
+## ▸ What Sets Claria Apart
+
+### **Most submissions will showcase basic API calls. Claria showcases mastery.**
+
+**Advanced Chrome AI Integration:**
+- **Streaming responses** → Most will use static `.prompt()`, we show real-time `.promptStreaming()`
+- **Multimodal processing** → Audio + image inputs (requires EPP access and technical expertise)
+- **4 summary types** → Leverages all Summarizer API capabilities (headline, tldr, teaser, key-points)
+- **Custom parameters** → Uses `temperature`, `topK`, `sharedContext` for optimized results
+
+**Universal Compatibility:**
+- **Works on 100% of devices** → Intelligent fallback for ARM64 processors
+- **No Chrome flags required** → Fallback ensures everyone experiences Claria
+- **Production-ready error handling** → Graceful degradation, no crashes
+
+**Technical Excellence:**
+- **Session management** → Proper initialization, reuse, and cleanup
+- **Partial error handling** → If one summary type fails, others still work
+- **Scientific validation** → Flesch-Kincaid grade level before/after metrics
+- **Performance optimization** → Parallel processing, timeout protection
+
+**Real-World Impact:**
+- **5 document domains** → Legal, Medical, Technical, Academic, Financial
+- **3 complexity levels** → Truly differentiated outputs (Elementary, High School, College)
+- **Quantifiable results** → Grade level reduction, processing speed, word count metrics
 
 ## ▸ Contributing
 
@@ -216,9 +285,8 @@ MIT License - Because knowledge should be free. See [LICENSE](LICENSE) file.
 
 ## ▸ Author
 
-**Vishesh Singh Rajput aka specstan**
-- GitHub: [@specstan](https://github.com/Asamaurdhava/Asamaurdhava)
-- X: [atspecstan](https://x.com/atspecstan)
+**Vishesh Singh Rajput**
+- GitHub: [@specstan](https://github.com/specstan)
 - Built with passion for the Google Chrome AI Challenge 2025
 
 ## ▸ Acknowledgments

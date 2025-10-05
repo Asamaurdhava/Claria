@@ -86,6 +86,78 @@
 
             // Simple complexity score (0-100)
             return Math.min(100, Math.round((avgWordsPerSentence * 2) + (avgWordLength * 3)));
+        },
+
+        /**
+         * Calculate Flesch-Kincaid Grade Level for readability scoring
+         * Returns detailed readability metrics
+         */
+        calculateReadability(text) {
+            const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 0);
+            const words = text.split(/\s+/).filter(w => w.length > 0);
+            const syllables = words.reduce((count, word) => {
+                return count + this.countSyllables(word);
+            }, 0);
+
+            if (sentences.length === 0 || words.length === 0) {
+                return {
+                    gradeLevel: 0,
+                    readingAge: 5,
+                    sentences: 0,
+                    words: 0,
+                    syllables: 0,
+                    avgSentenceLength: 0,
+                    avgSyllablesPerWord: 0,
+                    complexity: 'Unknown'
+                };
+            }
+
+            const avgSentenceLength = words.length / sentences.length;
+            const avgSyllablesPerWord = syllables / words.length;
+
+            // Flesch-Kincaid Grade Level formula
+            const gradeLevel = 0.39 * avgSentenceLength + 11.8 * avgSyllablesPerWord - 15.59;
+            const clampedGradeLevel = Math.max(1, Math.min(18, Math.round(gradeLevel)));
+
+            return {
+                gradeLevel: clampedGradeLevel,
+                readingAge: clampedGradeLevel + 5, // Grade 3 = 8 years old
+                sentences: sentences.length,
+                words: words.length,
+                syllables: syllables,
+                avgSentenceLength: Math.round(avgSentenceLength * 10) / 10,
+                avgSyllablesPerWord: Math.round(avgSyllablesPerWord * 100) / 100,
+                complexity: this.getComplexityLabel(clampedGradeLevel)
+            };
+        },
+
+        /**
+         * Count syllables in a word (approximation)
+         */
+        countSyllables(word) {
+            word = word.toLowerCase().trim();
+            if (word.length <= 3) return 1;
+
+            // Remove silent 'e' at end
+            word = word.replace(/(?:[^laeiouy]es|ed|[^laeiouy]e)$/, '');
+            // Remove 'y' at start
+            word = word.replace(/^y/, '');
+
+            // Count vowel groups
+            const matches = word.match(/[aeiouy]{1,2}/g);
+            return matches ? matches.length : 1;
+        },
+
+        /**
+         * Get human-readable complexity label from grade level
+         */
+        getComplexityLabel(grade) {
+            if (grade <= 3) return 'Very Easy';
+            if (grade <= 6) return 'Easy';
+            if (grade <= 9) return 'Standard';
+            if (grade <= 12) return 'High School';
+            if (grade <= 16) return 'College';
+            return 'Very Complex';
         }
     };
 
@@ -115,7 +187,9 @@
 
                     if (capabilities.available === 'readily') {
                         this.sessions.languageModel = await window.ai.languageModel.create({
-                            systemPrompt: 'You are an expert text simplification assistant. Always provide clear, accurate simplifications while preserving the original meaning.'
+                            systemPrompt: 'You are an expert text simplification assistant. Always provide clear, accurate simplifications while preserving the original meaning.',
+                            temperature: 0.7,
+                            topK: 40
                         });
                         results.languageModel = true;
                         console.log('✅ Language Model API ready');
@@ -338,6 +412,285 @@
                 console.error('Summarizer API error:', error);
                 return null;
             }
+        },
+
+        // ============================================
+        // ENHANCED FEATURES - Chrome AI Only
+        // ============================================
+
+        /**
+         * Generate multiple summary types using Summarizer API
+         * Only works when Chrome AI is available
+         */
+        async generateMultipleSummaries(text, documentType) {
+            if (!AppState.chromeAI.summarizer) {
+                return null;
+            }
+
+            const summaries = {};
+
+            try {
+                // 1. Headline Summary (Single sentence summary)
+                try {
+                    const headlineSummarizer = await window.ai.summarizer.create({
+                        type: 'headline',
+                        format: 'plain-text',
+                        length: 'short',
+                        sharedContext: `This is a ${documentType} document`
+                    });
+                    summaries.headline = await Utils.withTimeout(
+                        headlineSummarizer.summarize(text),
+                        10000
+                    );
+                    await headlineSummarizer.destroy();
+                } catch (error) {
+                    console.error('Headline summary failed:', error);
+                    summaries.headline = null;
+                }
+
+                // 2. TL;DR (Quick overview)
+                try {
+                    const tldrSummarizer = await window.ai.summarizer.create({
+                        type: 'tldr',
+                        format: 'plain-text',
+                        length: 'medium'
+                    });
+                    summaries.tldr = await Utils.withTimeout(
+                        tldrSummarizer.summarize(text),
+                        10000
+                    );
+                    await tldrSummarizer.destroy();
+                } catch (error) {
+                    console.error('TL;DR summary failed:', error);
+                    summaries.tldr = null;
+                }
+
+                // 3. Teaser (Intriguing highlights)
+                try {
+                    const teaserSummarizer = await window.ai.summarizer.create({
+                        type: 'teaser',
+                        format: 'plain-text',
+                        length: 'medium'
+                    });
+                    summaries.teaser = await Utils.withTimeout(
+                        teaserSummarizer.summarize(text),
+                        10000
+                    );
+                    await teaserSummarizer.destroy();
+                } catch (error) {
+                    console.error('Teaser summary failed:', error);
+                    summaries.teaser = null;
+                }
+
+                // 4. Key Points (Already implemented, reuse)
+                try {
+                    const keyPoints = await this.extractKeyPoints(text);
+                    summaries.keyPoints = keyPoints;
+                } catch (error) {
+                    console.error('Key points extraction failed:', error);
+                    summaries.keyPoints = null;
+                }
+
+                console.log('Generated summaries using Summarizer API');
+                return summaries;
+            } catch (error) {
+                console.error('Multi-summary generation failed:', error);
+                return null;
+            }
+        },
+
+        /**
+         * Process text with streaming for real-time feedback
+         * Only works when Language Model API is available
+         */
+        async processTextWithStreaming(text, documentType, complexityLevel, outputElement) {
+            if (!this.sessions.languageModel && !AppState.chromeAI.languageModel) {
+                return null;
+            }
+
+            try {
+                // Session should already be created in init()
+                if (!this.sessions.languageModel) {
+                    console.error('Language Model session not initialized');
+                    return null;
+                }
+
+                const prompt = this.buildStreamingPrompt(text, documentType, complexityLevel);
+
+                // Clear output element for streaming
+                if (outputElement) {
+                    outputElement.textContent = '';
+                }
+
+                let fullResponse = '';
+
+                // Use streaming API
+                const stream = await this.sessions.languageModel.promptStreaming(prompt);
+
+                for await (const chunk of stream) {
+                    fullResponse = chunk;
+                    if (outputElement) {
+                        outputElement.textContent = chunk;
+                        // Auto-scroll to show latest content
+                        outputElement.scrollTop = outputElement.scrollHeight;
+                    }
+                }
+
+                console.log('✅ Streaming complete');
+                return fullResponse;
+            } catch (error) {
+                console.error('Streaming failed:', error);
+                return null;
+            }
+        },
+
+        buildStreamingPrompt(text, documentType, complexityLevel) {
+            const levels = {
+                simple: 'Explain this as if teaching a 10-year-old child. Use very simple words and short sentences (maximum 12 words per sentence). Break complex ideas into multiple simple sentences.',
+                standard: 'Rewrite this for a high school student. Use clear language and moderate sentence length (maximum 20 words per sentence). Avoid jargon.',
+                educated: 'Clarify this for a college-educated adult. Maintain precision while improving clarity. Use professional but accessible language.'
+            };
+
+            const domains = {
+                legal: 'This is a legal document. Remove legal jargon and explain what it actually means in plain language.',
+                medical: 'This is medical information. Replace medical terminology with patient-friendly language.',
+                technical: 'This is technical documentation. Explain it for non-technical readers without losing accuracy.',
+                academic: 'This is academic text. Make it accessible to general readers while preserving scholarly content.',
+                financial: 'This is financial information. Explain it in everyday terms that anyone can understand.',
+                auto: 'Simplify and clarify this text while preserving all important information.'
+            };
+
+            return `${domains[documentType]} ${levels[complexityLevel]}\n\nOriginal text:\n${text}\n\nSimplified version:`;
+        },
+
+        /**
+         * Process text at all 3 complexity levels for comparison
+         * Only works when Chrome AI is available
+         */
+        async processAllComplexityLevels(text, documentType) {
+            const levels = ['simple', 'standard', 'educated'];
+            const results = {};
+
+            try {
+                // Process all levels in parallel for speed
+                const promises = levels.map(async (level) => {
+                    const result = await this.processText(text, documentType, level);
+                    return { level, result };
+                });
+
+                const outputs = await Promise.all(promises);
+
+                outputs.forEach(({ level, result }) => {
+                    if (result && result.text) {
+                        results[level] = result.text;
+                    }
+                });
+
+                console.log('✅ Generated outputs for all 3 complexity levels');
+                return Object.keys(results).length === 3 ? results : null;
+            } catch (error) {
+                console.error('Multi-level processing failed:', error);
+                return null;
+            }
+        },
+
+        /**
+         * Process audio file using multimodal Prompt API
+         * Transcribes and simplifies audio content
+         * Only works when Language Model API with multimodal support is available
+         */
+        async processAudioDocument(audioFile, documentType, complexityLevel) {
+            if (!this.sessions.languageModel && !AppState.chromeAI.languageModel) {
+                return null;
+            }
+
+            try {
+                // Create session if needed
+                if (!this.sessions.languageModel) {
+                    this.sessions.languageModel = await window.ai.languageModel.create({
+                        systemPrompt: 'You are an expert at transcribing and simplifying audio content.',
+                        temperature: 0.7,
+                        topK: 40
+                    });
+                }
+
+                // Convert audio file to ArrayBuffer
+                const arrayBuffer = await audioFile.arrayBuffer();
+
+                const prompt = this.buildStreamingPrompt(
+                    'Transcribe this audio and then simplify it.',
+                    documentType,
+                    complexityLevel
+                );
+
+                // Process with multimodal input
+                const result = await this.sessions.languageModel.prompt(prompt, {
+                    audio: arrayBuffer
+                });
+
+                console.log('✅ Audio document processed using multimodal Prompt API');
+                return result;
+            } catch (error) {
+                console.error('Audio processing failed:', error);
+                return null;
+            }
+        },
+
+        /**
+         * Process image document using multimodal Prompt API
+         * Extracts text from images and simplifies
+         * Only works when Language Model API with multimodal support is available
+         */
+        async processImageDocument(imageFile, documentType, complexityLevel) {
+            if (!this.sessions.languageModel && !AppState.chromeAI.languageModel) {
+                return null;
+            }
+
+            try {
+                // Create session if needed
+                if (!this.sessions.languageModel) {
+                    this.sessions.languageModel = await window.ai.languageModel.create({
+                        systemPrompt: 'You are an expert at extracting and simplifying text from images.',
+                        temperature: 0.7,
+                        topK: 40
+                    });
+                }
+
+                // Convert image file to ArrayBuffer
+                const arrayBuffer = await imageFile.arrayBuffer();
+
+                const prompt = `Extract all text from this image (it may be a screenshot, PDF page, or photo of a document). Then simplify the extracted text to ${complexityLevel} reading level for a ${documentType} document. Provide only the simplified text.`;
+
+                // Process with multimodal input
+                const result = await this.sessions.languageModel.prompt(prompt, {
+                    image: arrayBuffer
+                });
+
+                console.log('✅ Image document processed using multimodal Prompt API');
+                return result;
+            } catch (error) {
+                console.error('Image processing failed:', error);
+                return null;
+            }
+        },
+
+        /**
+         * Cleanup all active sessions
+         * Called on page unload to prevent memory leaks
+         */
+        cleanup() {
+            console.log('Cleaning up Chrome AI sessions...');
+            Object.keys(this.sessions).forEach(key => {
+                if (this.sessions[key]?.destroy) {
+                    try {
+                        this.sessions[key].destroy();
+                        console.log(`Destroyed ${key} session`);
+                    } catch (error) {
+                        console.error(`Failed to destroy ${key} session:`, error);
+                    }
+                }
+                this.sessions[key] = null;
+            });
         }
     };
 
@@ -1262,6 +1615,24 @@
             this.elements.input.addEventListener('input', () => {
                 this.autoResizeTextarea();
             });
+
+            // ===== ENHANCED FEATURES: File Upload Handlers (Chrome AI only) =====
+
+            // Audio file upload handler
+            const audioUpload = document.getElementById('audio-upload');
+            if (audioUpload) {
+                audioUpload.addEventListener('change', async (e) => {
+                    await this.handleAudioUpload(e);
+                });
+            }
+
+            // Image file upload handler
+            const imageUpload = document.getElementById('image-upload');
+            if (imageUpload) {
+                imageUpload.addEventListener('change', async (e) => {
+                    await this.handleImageUpload(e);
+                });
+            }
         },
 
         handleTypeChange(button) {
@@ -1296,30 +1667,74 @@
             btn.disabled = true;
             btn.textContent = 'Processing...';
 
+            const startTime = performance.now();
+
             try {
                 let result;
                 let keyPoints = [];
+                let multiSummaries = null;
+                let readabilityBefore = null;
+                let readabilityAfter = null;
+
+                // Calculate readability of original text
+                readabilityBefore = Utils.calculateReadability(input);
 
                 if (AppState.mode === 'chrome-ai') {
-                    // Try Chrome AI first
+                    // ===== ENHANCED CHROME AI PROCESSING =====
                     try {
-                        const aiResult = await ChromeAI.processText(input, AppState.documentType, AppState.complexityLevel);
-                        if (aiResult && aiResult.text) {
-                            result = aiResult.text;
+                        // Use streaming for real-time feedback if Language Model available
+                        if (AppState.chromeAI.languageModel) {
+                            console.log('🚀 Using streaming mode for real-time processing...');
+                            result = await ChromeAI.processTextWithStreaming(
+                                input,
+                                AppState.documentType,
+                                AppState.complexityLevel,
+                                this.elements.output // Stream directly to output element
+                            );
                         }
+
+                        // Fallback to regular processing if streaming unavailable
+                        if (!result) {
+                            const aiResult = await ChromeAI.processText(input, AppState.documentType, AppState.complexityLevel);
+                            if (aiResult && aiResult.text) {
+                                result = aiResult.text;
+                            }
+                        }
+
+                        // Generate multiple summary types if Summarizer API available
+                        if (result && AppState.chromeAI.summarizer) {
+                            console.log('🚀 Generating 4 types of summaries...');
+                            multiSummaries = await ChromeAI.generateMultipleSummaries(input, AppState.documentType);
+
+                            // Extract key points from multi-summaries
+                            if (multiSummaries && multiSummaries.keyPoints) {
+                                keyPoints = multiSummaries.keyPoints;
+                            }
+                        }
+
                     } catch (error) {
                         console.error('Chrome AI error:', error);
                     }
                 }
 
                 if (!result) {
-                    // Use fallback
+                    // ===== FALLBACK PROCESSING (unchanged) =====
                     result = FallbackEngine.process(input, AppState.documentType, AppState.complexityLevel);
                     keyPoints = FallbackEngine.extractKeyPoints(input);
                 }
 
-                // Display results
-                this.displayResults(result, keyPoints, input);
+                // Calculate readability of clarified text
+                readabilityAfter = Utils.calculateReadability(result);
+
+                const processingTime = performance.now() - startTime;
+
+                // Display results with enhanced data
+                this.displayResults(result, keyPoints, input, {
+                    multiSummaries: multiSummaries,
+                    readabilityBefore: readabilityBefore,
+                    readabilityAfter: readabilityAfter,
+                    processingTime: processingTime
+                });
 
             } catch (error) {
                 console.error('Processing error:', error);
@@ -1330,13 +1745,15 @@
             }
         },
 
-        displayResults(clarifiedText, keyPoints, originalText) {
+        displayResults(clarifiedText, keyPoints, originalText, enhancedData = {}) {
             // Show output section
             const outputSection = document.getElementById('output-section');
             const output = document.getElementById('output');
 
-            // Show clarified text
-            output.textContent = clarifiedText;
+            // Show clarified text (may already be populated by streaming)
+            if (!output.textContent || output.textContent.length === 0) {
+                output.textContent = clarifiedText;
+            }
 
             // Update individual metric elements
             const originalLength = document.getElementById('original-length');
@@ -1346,7 +1763,14 @@
 
             if (originalLength) originalLength.textContent = originalText.length.toLocaleString();
             if (clarifiedLength) clarifiedLength.textContent = clarifiedText.length.toLocaleString();
-            if (processingTime) processingTime.textContent = '<100ms';
+
+            // Show actual processing time if available
+            if (processingTime && enhancedData.processingTime) {
+                processingTime.textContent = Utils.formatTime(Math.round(enhancedData.processingTime));
+            } else if (processingTime) {
+                processingTime.textContent = '<100ms';
+            }
+
             if (aiEngine) aiEngine.textContent = AppState.mode === 'chrome-ai' ? 'Chrome AI' : 'Enhanced';
 
             // Show key points
@@ -1357,9 +1781,212 @@
                     .join('');
             }
 
+            // ===== DISPLAY ENHANCED CHROME AI FEATURES =====
+
+            // Display multi-summaries if available
+            if (enhancedData.multiSummaries) {
+                this.displayMultiSummaries(enhancedData.multiSummaries);
+            }
+
+            // Display readability comparison if available
+            if (enhancedData.readabilityBefore && enhancedData.readabilityAfter) {
+                this.displayReadabilityComparison(enhancedData.readabilityBefore, enhancedData.readabilityAfter);
+            }
+
             // Show output section
             outputSection.classList.remove('hidden');
             outputSection.scrollIntoView({ behavior: 'smooth' });
+        },
+
+        /**
+         * Display multiple summary types (Chrome AI only feature)
+         */
+        displayMultiSummaries(summaries) {
+            // Check if multi-summary UI elements exist
+            const summaryTabs = document.getElementById('summary-tabs');
+            const summaryDisplay = document.getElementById('summary-display');
+
+            if (!summaryTabs || !summaryDisplay) {
+                console.log('Multi-summary UI not available, creating dynamically...');
+                this.createMultiSummaryUI(summaries);
+                return;
+            }
+
+            // Populate existing UI
+            summaryDisplay.innerHTML = `
+                <div class="summary-tab-content active" data-summary="headline">
+                    <h4>📰 Headline Summary</h4>
+                    <p class="summary-text">${summaries.headline || 'Not available'}</p>
+                </div>
+                <div class="summary-tab-content" data-summary="tldr">
+                    <h4>⚡ TL;DR</h4>
+                    <p class="summary-text">${summaries.tldr || 'Not available'}</p>
+                </div>
+                <div class="summary-tab-content" data-summary="teaser">
+                    <h4>🎯 Teaser</h4>
+                    <p class="summary-text">${summaries.teaser || 'Not available'}</p>
+                </div>
+                <div class="summary-tab-content" data-summary="keypoints">
+                    <h4>🔑 Key Points</h4>
+                    <ul class="summary-list">
+                        ${summaries.keyPoints && summaries.keyPoints.length > 0
+                            ? summaries.keyPoints.map(point => `<li>${point}</li>`).join('')
+                            : '<li>Not available</li>'}
+                    </ul>
+                </div>
+            `;
+
+            // Show multi-summary section
+            const multiSummarySection = document.getElementById('multi-summary-section');
+            if (multiSummarySection) {
+                multiSummarySection.classList.remove('hidden');
+            }
+
+            console.log('✅ Displayed 4 summary types');
+        },
+
+        /**
+         * Display readability comparison (shows improvement)
+         */
+        displayReadabilityComparison(before, after) {
+            const readabilitySection = document.getElementById('readability-section');
+
+            if (!readabilitySection) {
+                console.log('Readability UI not available, creating dynamically...');
+                this.createReadabilityUI(before, after);
+                return;
+            }
+
+            readabilitySection.innerHTML = `
+                <h3 class="section-subtitle">📊 Readability Improvement</h3>
+                <div class="readability-comparison">
+                    <div class="readability-before">
+                        <div class="readability-label">Before</div>
+                        <div class="grade-level grade-${before.gradeLevel > 12 ? 'high' : before.gradeLevel > 6 ? 'medium' : 'low'}">
+                            Grade ${before.gradeLevel}
+                        </div>
+                        <div class="readability-detail">${before.complexity}</div>
+                        <div class="readability-stats">
+                            <span>${before.avgSentenceLength} words/sentence</span>
+                            <span>${before.avgSyllablesPerWord} syllables/word</span>
+                        </div>
+                    </div>
+                    <div class="readability-arrow">→</div>
+                    <div class="readability-after">
+                        <div class="readability-label">After</div>
+                        <div class="grade-level grade-${after.gradeLevel > 12 ? 'high' : after.gradeLevel > 6 ? 'medium' : 'low'}">
+                            Grade ${after.gradeLevel}
+                        </div>
+                        <div class="readability-detail">${after.complexity}</div>
+                        <div class="readability-stats">
+                            <span>${after.avgSentenceLength} words/sentence</span>
+                            <span>${after.avgSyllablesPerWord} syllables/word</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="improvement-badge">
+                    ${before.gradeLevel > after.gradeLevel
+                        ? `✅ Reduced by ${before.gradeLevel - after.gradeLevel} grade levels`
+                        : '✅ Maintained readability'}
+                </div>
+            `;
+
+            readabilitySection.classList.remove('hidden');
+            console.log('✅ Displayed readability comparison');
+        },
+
+        createMultiSummaryUI(summaries) {
+            // Insert multi-summary section dynamically after output
+            const outputSection = document.getElementById('output-section');
+            if (!outputSection) return;
+
+            const multiSummaryHTML = `
+                <div id="multi-summary-section" class="enhanced-section" style="margin-top: 2rem;">
+                    <h3 class="section-subtitle">📋 Multiple Summary Types (Chrome AI)</h3>
+                    <div class="summary-tabs" id="summary-tabs">
+                        <button class="tab active" onclick="ClariaApp.switchSummaryTab('headline')">📰 Headline</button>
+                        <button class="tab" onclick="ClariaApp.switchSummaryTab('tldr')">⚡ TL;DR</button>
+                        <button class="tab" onclick="ClariaApp.switchSummaryTab('teaser')">🎯 Teaser</button>
+                        <button class="tab" onclick="ClariaApp.switchSummaryTab('keypoints')">🔑 Key Points</button>
+                    </div>
+                    <div id="summary-display" style="padding: 1rem; background: #f9fafb; border-radius: 8px; margin-top: 1rem;">
+                        <div class="summary-tab-content active" data-summary="headline">
+                            <h4>📰 Headline Summary</h4>
+                            <p>${summaries.headline || 'Not available'}</p>
+                        </div>
+                        <div class="summary-tab-content" data-summary="tldr" style="display: none;">
+                            <h4>⚡ TL;DR</h4>
+                            <p>${summaries.tldr || 'Not available'}</p>
+                        </div>
+                        <div class="summary-tab-content" data-summary="teaser" style="display: none;">
+                            <h4>🎯 Teaser</h4>
+                            <p>${summaries.teaser || 'Not available'}</p>
+                        </div>
+                        <div class="summary-tab-content" data-summary="keypoints" style="display: none;">
+                            <h4>🔑 Key Points</h4>
+                            <ul>${summaries.keyPoints ? summaries.keyPoints.map(p => `<li>${p}</li>`).join('') : '<li>Not available</li>'}</ul>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            outputSection.insertAdjacentHTML('beforeend', multiSummaryHTML);
+        },
+
+        createReadabilityUI(before, after) {
+            const outputSection = document.getElementById('output-section');
+            if (!outputSection) return;
+
+            const readabilityHTML = `
+                <div id="readability-section" class="enhanced-section" style="margin-top: 2rem;">
+                    <h3 class="section-subtitle">📊 Readability Improvement</h3>
+                    <div style="display: flex; gap: 2rem; align-items: center; padding: 1rem; background: #f9fafb; border-radius: 8px;">
+                        <div style="flex: 1; text-align: center;">
+                            <div style="color: #6b7280; margin-bottom: 0.5rem;">Before</div>
+                            <div style="font-size: 2rem; font-weight: bold; color: #ef4444;">Grade ${before.gradeLevel}</div>
+                            <div style="color: #6b7280;">${before.complexity}</div>
+                        </div>
+                        <div style="font-size: 2rem;">→</div>
+                        <div style="flex: 1; text-align: center;">
+                            <div style="color: #6b7280; margin-bottom: 0.5rem;">After</div>
+                            <div style="font-size: 2rem; font-weight: bold; color: #10b981;">Grade ${after.gradeLevel}</div>
+                            <div style="color: #6b7280;">${after.complexity}</div>
+                        </div>
+                    </div>
+                    <div style="text-align: center; margin-top: 1rem; color: #059669; font-weight: 600;">
+                        ✅ ${before.gradeLevel > after.gradeLevel ? `Improved by ${before.gradeLevel - after.gradeLevel} grade levels!` : 'Maintained readability'}
+                    </div>
+                </div>
+            `;
+
+            outputSection.insertAdjacentHTML('beforeend', readabilityHTML);
+        },
+
+        switchSummaryTab(tabName) {
+            // Hide all tab contents
+            document.querySelectorAll('.summary-tab-content').forEach(content => {
+                content.style.display = 'none';
+                content.classList.remove('active');
+            });
+
+            // Remove active class from all tabs
+            document.querySelectorAll('#summary-tabs .tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+
+            // Show selected tab
+            const selectedContent = document.querySelector(`.summary-tab-content[data-summary="${tabName}"]`);
+            if (selectedContent) {
+                selectedContent.style.display = 'block';
+                selectedContent.classList.add('active');
+            }
+
+            // Highlight active tab button
+            const tabButtons = document.querySelectorAll('#summary-tabs .tab');
+            const tabIndex = ['headline', 'tldr', 'teaser', 'keypoints'].indexOf(tabName);
+            if (tabButtons[tabIndex]) {
+                tabButtons[tabIndex].classList.add('active');
+            }
         },
 
         getMethodDisplayName(method) {
@@ -1578,6 +2205,146 @@
                 console.error('Speech synthesis error:', error);
                 this.showError('Text-to-speech not supported');
             }
+        },
+
+        // ============================================
+        // ENHANCED FEATURES: Multimodal Processing
+        // ============================================
+
+        /**
+         * Handle audio file upload and processing
+         * Only works when Chrome AI multimodal Prompt API is available
+         */
+        async handleAudioUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            // Check if Chrome AI is available
+            if (AppState.mode !== 'chrome-ai' || !AppState.chromeAI.languageModel) {
+                alert('Audio processing requires Chrome AI Language Model API.\n\nThis feature is only available on Intel/AMD devices with Chrome 127+ and AI features enabled.');
+                event.target.value = ''; // Reset file input
+                return;
+            }
+
+            // Validate file type
+            if (!file.type.startsWith('audio/')) {
+                alert('Please upload an audio file (MP3, WAV, M4A, etc.)');
+                event.target.value = '';
+                return;
+            }
+
+            // Show processing state
+            const btn = this.elements.clarifyBtn;
+            const originalText = btn.textContent;
+            btn.disabled = true;
+            btn.textContent = 'Processing Audio...';
+
+            const startTime = performance.now();
+
+            try {
+                console.log(`Processing audio file: ${file.name} (${(file.size / 1024).toFixed(1)} KB)`);
+
+                // Process audio using multimodal Prompt API
+                const result = await ChromeAI.processAudioDocument(
+                    file,
+                    AppState.documentType,
+                    AppState.complexityLevel
+                );
+
+                if (result) {
+                    const processingTime = performance.now() - startTime;
+
+                    // Calculate readability
+                    const readabilityAfter = Utils.calculateReadability(result);
+
+                    // Display results
+                    this.displayResults(result, [], `[Audio: ${file.name}]`, {
+                        processingTime: processingTime,
+                        readabilityAfter: readabilityAfter
+                    });
+
+                    // Show success message
+                    alert(`Audio processed successfully!\n\nTranscribed and simplified in ${Utils.formatTime(Math.round(processingTime))}`);
+                } else {
+                    throw new Error('Audio processing failed - no result returned');
+                }
+
+            } catch (error) {
+                console.error('Audio processing error:', error);
+                alert(`Failed to process audio file.\n\nError: ${error.message}\n\nNote: Multimodal features require Chrome 127+ with AI features enabled.`);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = originalText;
+                event.target.value = ''; // Reset file input
+            }
+        },
+
+        /**
+         * Handle image file upload and processing
+         * Only works when Chrome AI multimodal Prompt API is available
+         */
+        async handleImageUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            // Check if Chrome AI is available
+            if (AppState.mode !== 'chrome-ai' || !AppState.chromeAI.languageModel) {
+                alert('Image processing requires Chrome AI Language Model API.\n\nThis feature is only available on Intel/AMD devices with Chrome 127+ and AI features enabled.');
+                event.target.value = ''; // Reset file input
+                return;
+            }
+
+            // Validate file type
+            if (!file.type.startsWith('image/')) {
+                alert('Please upload an image file (PNG, JPG, JPEG, etc.)');
+                event.target.value = '';
+                return;
+            }
+
+            // Show processing state
+            const btn = this.elements.clarifyBtn;
+            const originalText = btn.textContent;
+            btn.disabled = true;
+            btn.textContent = 'Processing Image...';
+
+            const startTime = performance.now();
+
+            try {
+                console.log(`Processing image file: ${file.name} (${(file.size / 1024).toFixed(1)} KB)`);
+
+                // Process image using multimodal Prompt API
+                const result = await ChromeAI.processImageDocument(
+                    file,
+                    AppState.documentType,
+                    AppState.complexityLevel
+                );
+
+                if (result) {
+                    const processingTime = performance.now() - startTime;
+
+                    // Calculate readability
+                    const readabilityAfter = Utils.calculateReadability(result);
+
+                    // Display results
+                    this.displayResults(result, [], `[Image: ${file.name}]`, {
+                        processingTime: processingTime,
+                        readabilityAfter: readabilityAfter
+                    });
+
+                    // Show success message
+                    alert(`Image processed successfully!\n\nExtracted and simplified text in ${Utils.formatTime(Math.round(processingTime))}`);
+                } else {
+                    throw new Error('Image processing failed - no result returned');
+                }
+
+            } catch (error) {
+                console.error('Image processing error:', error);
+                alert(`Failed to process image file.\n\nError: ${error.message}\n\nNote: Multimodal features require Chrome 127+ with AI features enabled.`);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = originalText;
+                event.target.value = ''; // Reset file input
+            }
         }
     };
 
@@ -1589,6 +2356,11 @@
     } else {
         ClariaApp.init();
     }
+
+    // Cleanup Chrome AI sessions on page unload
+    window.addEventListener('beforeunload', () => {
+        ChromeAI.cleanup();
+    });
 
     // Panel Navigation System
     const PanelSystem = {

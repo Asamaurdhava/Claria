@@ -148,6 +148,41 @@
                                 Uses Chrome's built-in AI <span id="availability-info" class="availability-link">when available</span>
                             </div>
                         </div>
+
+                        <!-- Multimodal Input Section (Chrome AI Only) -->
+                        <div class="multimodal-section" style="margin-top: 2rem; padding-top: 2rem; border-top: 1px solid #e5e7eb;">
+                            <h3 style="font-size: 0.875rem; font-weight: 600; color: #6b7280; margin-bottom: 1rem; text-transform: uppercase; letter-spacing: 0.05em; display: flex; align-items: center; gap: 0.5rem;">
+                                <img width="20" height="20" src="https://img.icons8.com/ios-filled/50/rocket.png" alt="rocket" style="display: inline-block;"/> Advanced Chrome AI Features
+                            </h3>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                                <!-- Audio Upload -->
+                                <div class="upload-card" style="padding: 1rem; background: #f9fafb; border-radius: 8px; border: 2px dashed #d1d5db; text-align: center; cursor: pointer; transition: all 0.2s;">
+                                    <label for="audio-upload" style="cursor: pointer; display: block;">
+                                        <div style="margin-bottom: 0.5rem;">
+                                            <img width="40" height="40" src="https://img.icons8.com/3d-fluency/94/mic.png" alt="mic" style="display: inline-block;"/>
+                                        </div>
+                                        <div style="font-weight: 600; color: #374151; margin-bottom: 0.25rem;">Upload Audio</div>
+                                        <div style="font-size: 0.75rem; color: #6b7280;">Transcribe & simplify</div>
+                                        <input type="file" id="audio-upload" accept="audio/*" style="display: none;">
+                                    </label>
+                                </div>
+
+                                <!-- Image Upload -->
+                                <div class="upload-card" style="padding: 1rem; background: #f9fafb; border-radius: 8px; border: 2px dashed #d1d5db; text-align: center; cursor: pointer; transition: all 0.2s;">
+                                    <label for="image-upload" style="cursor: pointer; display: block;">
+                                        <div style="margin-bottom: 0.5rem;">
+                                            <img width="40" height="40" src="https://img.icons8.com/ink/48/camera.png" alt="camera" style="display: inline-block;"/>
+                                        </div>
+                                        <div style="font-weight: 600; color: #374151; margin-bottom: 0.25rem;">Upload Image</div>
+                                        <div style="font-size: 0.75rem; color: #6b7280;">Extract & simplify text</div>
+                                        <input type="file" id="image-upload" accept="image/*" style="display: none;">
+                                    </label>
+                                </div>
+                            </div>
+                            <div style="margin-top: 0.75rem; font-size: 0.75rem; color: #9ca3af; text-align: center;">
+                                Multimodal features require Chrome AI on Intel/AMD devices
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Processing State -->
