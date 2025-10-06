@@ -2519,5 +2519,7 @@
     window.AppState = AppState;
     window.PanelSystem = PanelSystem;
     window.ModalSystem = ModalSystem;
+    window.Utils = Utils;
+    window.FallbackEngine = FallbackEngine;
 
 })();

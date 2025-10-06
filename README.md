@@ -109,10 +109,36 @@ if (window.ai) {
 ```bash
 git clone https://github.com/specstan/claria.git
 cd claria
-open index.html  # That's it. Seriously.
+open public/index.html  # That's it. Seriously.
 ```
 
 **No npm. No webpack. No configuration. Just open and transform.**
+
+## ▸ Running Tests
+
+Claria includes a comprehensive unit test suite demonstrating production-quality code:
+
+```bash
+open tests/index.html  # Opens visual test runner
+```
+
+**Test Coverage:**
+- ✓ **45+ unit tests** covering all core functionality
+- ✓ **Utils functions** - formatTime, sanitizeHTML, readability calculations
+- ✓ **FallbackEngine** - jargon replacement, complexity levels, key point extraction
+- ✓ **Integration tests** - end-to-end simplification workflows
+- ✓ **Edge cases** - empty strings, special characters, long text, unicode
+- ✓ **Performance tests** - processing under 100ms, fast readability calculation
+
+**What's Tested:**
+- Flesch-Kincaid grade level accuracy
+- Medical/Legal/Technical jargon replacement
+- Complexity level differentiation (Elementary/High School/College)
+- XSS prevention and input sanitization
+- Timeout protection and error handling
+- Text processing performance benchmarks
+
+All tests run in pure vanilla JavaScript with zero dependencies.
 
 ## ▸ Technical Excellence
 
@@ -128,8 +154,11 @@ claria/
 ├── public/             # Web application
 │   ├── index.html      # Main entry point
 │   └── src/
-│       ├── app.js      # Core application logic
+│       ├── app.js      # Core application logic (2,400+ lines)
 │       └── styles.css  # Styling and animations
+├── tests/              # Test suite
+│   ├── index.html      # Visual test runner
+│   └── test.js         # 45+ unit tests
 ├── README.md           # Documentation
 ├── LICENSE             # MIT License
 ├── netlify.toml        # Deployment configuration

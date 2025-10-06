@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Claria - Test Suite</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 800 200'%3E%3Ctext x='400' y='150' font-size='300' font-family='Matangi' font-weight='bold' fill='%232b7fff' text-anchor='middle'%3EClaria%3C/text%3E%3C/svg%3E">
+
+    <!-- Matangi Font (same as main app) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Matangi:wght@400;700&display=swap" rel="stylesheet">
+
+    <!-- Load Claria's styles -->
+    <link rel="stylesheet" href="../public/src/styles.css">
+
+    <style>
+        /* Test-specific overrides */
+        body {
+            background: var(--gray-50);
+        }
+
+        .test-header {
+            background: #2b7fff;
+            color: var(--white);
+            padding: var(--space-12) var(--space-6);
+            text-align: center;
+            margin-bottom: var(--space-8);
+        }
+
+        .test-header h1 {
+            font-size: var(--text-4xl);
+            font-weight: 700;
+            margin-bottom: var(--space-2);
+            color: var(--white);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: var(--space-3);
+        }
+
+        .test-header p {
+            font-size: var(--text-lg);
+            opacity: 0.95;
+            color: var(--white);
+        }
+
+        .test-container {
+            max-width: var(--max-width);
+            margin: 0 auto;
+            padding: 0 var(--space-6);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: var(--space-6);
+            margin-bottom: var(--space-8);
+        }
+
+        .stat-card {
+            background: var(--white);
+            padding: var(--space-6);
+            border-radius: var(--radius-xl);
+            box-shadow: var(--shadow-lg);
+            border: 1px solid var(--gray-200);
+            transition: transform var(--transition-base), box-shadow var(--transition-base);
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-xl);
+        }
+
+        .stat-value {
+            font-size: var(--text-4xl);
+            font-weight: 700;
+            margin-bottom: var(--space-2);
+        }
+
+        .stat-card.total .stat-value {
+            color: #2b7fff;
+        }
+
+        .stat-card.passed .stat-value {
+            color: #2b7fff;
+        }
+
+        .stat-card.failed .stat-value {
+            color: var(--error);
+        }
+
+        .stat-card.time .stat-value {
+            color: #2b7fff;
+            font-size: var(--text-2xl);
+        }
+
+        .stat-label {
+            font-size: var(--text-sm);
+            color: var(--gray-500);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-weight: 600;
+        }
+
+        .run-button {
+            width: 100%;
+            background: #2b7fff;
+            color: var(--white);
+            border: none;
+            padding: var(--space-4) var(--space-6);
+            border-radius: var(--radius-lg);
+            font-size: var(--text-lg);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all var(--transition-base);
+            margin-bottom: var(--space-4);
+            box-shadow: var(--shadow-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: var(--space-2);
+        }
+
+        .run-button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-xl);
+        }
+
+        .run-button:active:not(:disabled) {
+            transform: translateY(0);
+        }
+
+        .run-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .progress-container {
+            background: var(--white);
+            padding: var(--space-6);
+            border-radius: var(--radius-xl);
+            box-shadow: var(--shadow-lg);
+            margin-bottom: var(--space-8);
+            border: 1px solid var(--gray-200);
+        }
+
+        .progress-bar {
+            height: 8px;
+            background: var(--gray-200);
+            border-radius: var(--radius-full);
+            overflow: hidden;
+            margin-top: var(--space-3);
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: #2b7fff;
+            width: 0%;
+            transition: width var(--transition-slow);
+            border-radius: var(--radius-full);
+        }
+
+        .console-container {
+            background: var(--white);
+            border-radius: var(--radius-xl);
+            box-shadow: var(--shadow-lg);
+            overflow: hidden;
+            margin-bottom: var(--space-8);
+            border: 1px solid var(--gray-200);
+        }
+
+        .console-header {
+            background: var(--gray-800);
+            color: var(--white);
+            padding: var(--space-4) var(--space-6);
+            font-size: var(--text-sm);
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
+        }
+
+        .console-output {
+            background: var(--gray-900);
+            color: var(--gray-100);
+            padding: var(--space-6);
+            font-family: var(--font-mono);
+            font-size: var(--text-sm);
+            max-height: 500px;
+            overflow-y: auto;
+            min-height: 300px;
+        }
+
+        .console-line {
+            padding: var(--space-1) 0;
+            line-height: 1.6;
+        }
+
+        .console-line.pass {
+            color: var(--success);
+        }
+
+        .console-line.fail {
+            color: var(--error);
+        }
+
+        .console-line.info {
+            color: #2b7fff;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-top-color: var(--white);
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Scrollbar styling to match Claria */
+        .console-output::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .console-output::-webkit-scrollbar-track {
+            background: var(--gray-800);
+        }
+
+        .console-output::-webkit-scrollbar-thumb {
+            background: var(--gray-600);
+            border-radius: var(--radius-full);
+        }
+
+        .console-output::-webkit-scrollbar-thumb:hover {
+            background: var(--gray-500);
+        }
+
+        .footer {
+            text-align: center;
+            padding: var(--space-8) var(--space-6);
+            color: var(--gray-500);
+            font-size: var(--text-sm);
+        }
+
+        .icon {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+        }
+
+        .header-icon {
+            width: 48px;
+            height: 48px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Test Header (matches Claria hero section) -->
+    <div class="test-header">
+        <h1>
+            <svg class="header-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M9 11l3 3L22 4"></path>
+                <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"></path>
+            </svg>
+            Claria Test Suite
+        </h1>
+        <p>Production-Quality Unit Tests - Zero Dependencies</p>
+    </div>
+
+    <div class="test-container">
+        <!-- Statistics Grid -->
+        <div class="stats-grid">
+            <div class="stat-card total">
+                <div class="stat-value" id="totalTests">0</div>
+                <div class="stat-label">Total Tests</div>
+            </div>
+            <div class="stat-card passed">
+                <div class="stat-value" id="passedTests">0</div>
+                <div class="stat-label">Passed</div>
+            </div>
+            <div class="stat-card failed">
+                <div class="stat-value" id="failedTests">0</div>
+                <div class="stat-label">Failed</div>
+            </div>
+            <div class="stat-card time">
+                <div class="stat-value" id="executionTime">0ms</div>
+                <div class="stat-label">Execution Time</div>
+            </div>
+        </div>
+
+        <!-- Run Button and Progress -->
+        <div class="progress-container">
+            <button id="runTests" class="run-button">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                </svg>
+                Run All Tests
+            </button>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progress"></div>
+            </div>
+        </div>
+
+        <!-- Console Output -->
+        <div class="console-container">
+            <div class="console-header">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="4 17 10 11 4 5"></polyline>
+                    <line x1="12" y1="19" x2="20" y2="19"></line>
+                </svg>
+                Test Console
+            </div>
+            <div class="console-output" id="console"></div>
+        </div>
+    </div>
+
+    <div class="footer">
+        <p>Claria Test Suite - Built with Vanilla JavaScript</p>
+        <p style="margin-top: var(--space-2); color: var(--gray-400);">
+            <a href="../public/index.html" style="color: #2b7fff; text-decoration: none; margin-right: var(--space-4);">
+                ← Back to Claria App
+            </a>
+            |
+            <span style="margin-left: var(--space-4);">Chrome AI Challenge 2025 Submission</span>
+        </p>
+    </div>
+
+    <!-- Load Claria app.js first -->
+    <script src="../public/src/app.js"></script>
+
+    <!-- Load test suite -->
+    <script src="test.js"></script>
+
+    <script>
+        const consoleEl = document.getElementById('console');
+        const runBtn = document.getElementById('runTests');
+        const progressBar = document.getElementById('progress');
+
+        // Override console methods to display in UI
+        const originalLog = console.log;
+        const originalError = console.error;
+
+        console.log = function(...args) {
+            originalLog.apply(console, args);
+            addConsoleLine(args.join(' '), 'info');
+        };
+
+        console.error = function(...args) {
+            originalError.apply(console, args);
+            addConsoleLine(args.join(' '), 'fail');
+        };
+
+        function addConsoleLine(text, type = 'info') {
+            const line = document.createElement('div');
+            line.className = `console-line ${type}`;
+
+            // Handle color formatting from test.js
+            if (text.includes('color:')) {
+                const match = text.match(/color: (#[0-9a-f]+)/);
+                const color = match ? match[1] : '';
+                const cleanText = text.replace(/%c/g, '').replace(/color: #[0-9a-f]+/g, '');
+
+                if (color === '#10b981') {
+                    line.className = 'console-line pass';
+                } else if (color === '#ef4444') {
+                    line.className = 'console-line fail';
+                }
+                line.textContent = cleanText;
+            } else {
+                line.textContent = text;
+            }
+
+            consoleEl.appendChild(line);
+            consoleEl.scrollTop = consoleEl.scrollHeight;
+        }
+
+        async function runTests() {
+            // Clear console
+            consoleEl.innerHTML = '';
+
+            // Disable button
+            runBtn.disabled = true;
+            runBtn.innerHTML = '<span class="spinner"></span>Running tests...';
+
+            // Reset stats
+            document.getElementById('totalTests').textContent = '0';
+            document.getElementById('passedTests').textContent = '0';
+            document.getElementById('failedTests').textContent = '0';
+            document.getElementById('executionTime').textContent = '0ms';
+            progressBar.style.width = '0%';
+
+            // Run tests
+            const startTime = performance.now();
+
+            // Reset test suite
+            ClariaTests.passed = 0;
+            ClariaTests.failed = 0;
+
+            const results = await ClariaTests.run();
+
+            const duration = performance.now() - startTime;
+
+            // Update stats
+            const total = results.passed + results.failed;
+            document.getElementById('totalTests').textContent = total;
+            document.getElementById('passedTests').textContent = results.passed;
+            document.getElementById('failedTests').textContent = results.failed;
+            document.getElementById('executionTime').textContent = Math.round(duration) + 'ms';
+
+            // Update progress bar
+            const successRate = (results.passed / total) * 100;
+            progressBar.style.width = successRate + '%';
+
+            // Create success/fail icons
+            const successIcon = `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M22 11.08V12a10 10 0 11-5.93-9.14"></path>
+                <polyline points="22 4 12 14.01 9 11.01"></polyline>
+            </svg>`;
+
+            const failIcon = `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="15" y1="9" x2="9" y2="15"></line>
+                <line x1="9" y1="9" x2="15" y2="15"></line>
+            </svg>`;
+
+            // Update button
+            if (results.failed === 0) {
+                runBtn.innerHTML = successIcon + ' All Tests Passed - ' + results.passed + '/' + total;
+                runBtn.style.background = '#2b7fff';
+            } else {
+                runBtn.innerHTML = failIcon + ' ' + results.failed + ' Test' + (results.failed > 1 ? 's' : '') + ' Failed';
+                runBtn.style.background = 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)';
+            }
+
+            // Re-enable after 2 seconds
+            setTimeout(() => {
+                runBtn.disabled = false;
+                runBtn.innerHTML = `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                </svg> Run All Tests Again`;
+                runBtn.style.background = '#2b7fff';
+            }, 2000);
+        }
+
+        // Run tests on button click
+        runBtn.addEventListener('click', runTests);
+
+        // Auto-run on load
+        window.addEventListener('DOMContentLoaded', () => {
+            addConsoleLine('[INFO] Claria Test Suite Ready', 'info');
+            addConsoleLine('─'.repeat(60), 'info');
+            addConsoleLine('[INFO] Click "Run All Tests" to start comprehensive testing', 'info');
+            addConsoleLine('', 'info');
+            addConsoleLine('[COVERAGE] Test Coverage:', 'info');
+            addConsoleLine('  • Utils functions (formatTime, sanitizeHTML, readability)', 'info');
+            addConsoleLine('  • FallbackEngine (jargon replacement, complexity levels)', 'info');
+            addConsoleLine('  • Integration tests (end-to-end workflows)', 'info');
+            addConsoleLine('  • Edge cases (empty strings, unicode, special chars)', 'info');
+            addConsoleLine('  • Performance benchmarks (<100ms processing)', 'info');
+            addConsoleLine('', 'info');
+            addConsoleLine('─'.repeat(60), 'info');
+        });
+    </script>
+</body>
+</html>
