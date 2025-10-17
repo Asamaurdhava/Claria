@@ -264,24 +264,31 @@
             let result = null;
             let method = 'fallback';
 
-            // Try only the first available Chrome AI API to avoid sequential delays
+            // Try each available Chrome AI API in priority order, falling through if one fails
             try {
-                if (this.sessions.languageModel || AppState.chromeAI.languageModel) {
-                    console.log('Using Language Model API...');
+                // Priority 1: Language Model (most capable)
+                if (!result && (this.sessions.languageModel || AppState.chromeAI.languageModel)) {
+                    console.log('Trying Language Model API...');
                     result = await this.useLanguageModelAPI(text, documentType, complexityLevel);
                     if (result) method = 'languageModel';
-                } else if (this.sessions.rewriter || AppState.chromeAI.rewriter) {
-                    console.log('Using Rewriter API...');
+                }
+
+                // Priority 2: Rewriter (focused on text transformation)
+                if (!result && (this.sessions.rewriter || AppState.chromeAI.rewriter)) {
+                    console.log('Trying Rewriter API...');
                     result = await this.useRewriterAPI(text, documentType, complexityLevel);
                     if (result) method = 'rewriter';
-                } else if (AppState.chromeAI.writer) {
-                    console.log('Using Writer API...');
+                }
+
+                // Priority 3: Writer (content generation fallback)
+                if (!result && AppState.chromeAI.writer) {
+                    console.log('Trying Writer API...');
                     result = await this.useWriterAPI(text, documentType, complexityLevel);
                     if (result) method = 'writer';
                 }
             } catch (error) {
                 console.error('Chrome AI API error:', error);
-                // Will return null and use fallback
+                // Will return null and use fallback engine
             }
 
             const processingTime = performance.now() - startTime;
@@ -1216,27 +1223,121 @@
             });
 
             // Step 2: Apply pattern-based processing for unknown terms
-            result = this.applyPatternProcessing(result);
+            result = this.applyPatternProcessing(result, complexityLevel);
 
             return result;
         },
 
-        applyPatternProcessing(text) {
+        applyPatternProcessing(text, complexityLevel) {
             let result = text;
 
+            // Complexity-aware suffix patterns
+            const suffixMappings = {
+                simple: {
+                    'itis': 'swelling',
+                    'osis': 'problem',
+                    'emia': 'blood problem',
+                    'algia': 'pain',
+                    'ology': 'study of',
+                    'ization': 'making',
+                    'ification': 'changing',
+                    'ectomy': 'removal',
+                    'otomy': 'cutting',
+                    'scopy': 'looking inside'
+                },
+                standard: {
+                    'itis': 'inflammation',
+                    'osis': 'condition',
+                    'emia': 'blood condition',
+                    'algia': 'pain',
+                    'ology': 'study of',
+                    'ization': 'process of',
+                    'ification': 'making into',
+                    'ectomy': 'surgical removal',
+                    'otomy': 'cutting into',
+                    'scopy': 'examination'
+                },
+                educated: {
+                    'itis': 'inflammation',
+                    'osis': 'pathological condition',
+                    'emia': 'blood disorder',
+                    'algia': 'pain syndrome',
+                    'ology': 'scientific study of',
+                    'ization': 'systematic process of',
+                    'ification': 'transformation into',
+                    'ectomy': 'surgical excision of',
+                    'otomy': 'surgical incision into',
+                    'scopy': 'diagnostic examination of'
+                }
+            };
+
+            const prefixMappings = {
+                simple: {
+                    'hyper': 'too much',
+                    'hypo': 'too little',
+                    'anti': 'against',
+                    'pre': 'before',
+                    'post': 'after',
+                    'inter': 'between',
+                    'intra': 'inside',
+                    'extra': 'outside',
+                    'sub': 'under',
+                    'super': 'above',
+                    'multi': 'many',
+                    'uni': 'one',
+                    'bi': 'two',
+                    'tri': 'three'
+                },
+                standard: {
+                    'hyper': 'above normal',
+                    'hypo': 'below normal',
+                    'anti': 'against',
+                    'pre': 'before',
+                    'post': 'after',
+                    'inter': 'between',
+                    'intra': 'within',
+                    'extra': 'outside',
+                    'sub': 'under',
+                    'super': 'above',
+                    'multi': 'many',
+                    'uni': 'one',
+                    'bi': 'two',
+                    'tri': 'three'
+                },
+                educated: {
+                    'hyper': 'elevated',
+                    'hypo': 'reduced',
+                    'anti': 'antagonistic to',
+                    'pre': 'preceding',
+                    'post': 'subsequent to',
+                    'inter': 'intermediate',
+                    'intra': 'internal',
+                    'extra': 'external',
+                    'sub': 'subordinate',
+                    'super': 'superior',
+                    'multi': 'multiple',
+                    'uni': 'singular',
+                    'bi': 'dual',
+                    'tri': 'triple'
+                }
+            };
+
+            const selectedSuffixes = suffixMappings[complexityLevel] || suffixMappings.standard;
+            const selectedPrefixes = prefixMappings[complexityLevel] || prefixMappings.standard;
+
             // Process suffix patterns
-            Object.keys(this.suffixPatterns).forEach(suffix => {
+            Object.keys(selectedSuffixes).forEach(suffix => {
                 const pattern = new RegExp(`\\b(\\w+)${suffix}\\b`, 'gi');
                 result = result.replace(pattern, (match, root) => {
-                    return `${root} ${this.suffixPatterns[suffix]}`;
+                    return `${root} ${selectedSuffixes[suffix]}`;
                 });
             });
 
             // Process prefix patterns
-            Object.keys(this.prefixPatterns).forEach(prefix => {
+            Object.keys(selectedPrefixes).forEach(prefix => {
                 const pattern = new RegExp(`\\b${prefix}(\\w+)\\b`, 'gi');
                 result = result.replace(pattern, (match, root) => {
-                    return `${this.prefixPatterns[prefix]} ${root}`;
+                    return `${selectedPrefixes[prefix]} ${root}`;
                 });
             });
 

@@ -25,7 +25,7 @@ Claria doesn't just simplify text—it democratizes knowledge. In under 3 second
 
 ## ▸ Live Demo
 
-**Try it yourself:** [Open index.html in Chrome 127+]
+**Try it now:** [https://claria.netlify.app](https://claria.netlify.app)
 
 Watch complex jargon transform into clear insights:
 - Paste any contract → Understand every clause
@@ -104,8 +104,11 @@ if (window.ai) {
 - **100/100** Lighthouse score
 - **WCAG 2.1** fully compliant
 
-## ▸ Installation in 10 Seconds
+## ▸ Get Started
 
+**Live App:** [https://claria.netlify.app](https://claria.netlify.app) - Start transforming documents instantly!
+
+**Local Development:**
 ```bash
 git clone https://github.com/specstan/claria.git
 cd claria
@@ -113,14 +116,6 @@ open public/index.html  # That's it. Seriously.
 ```
 
 **No npm. No webpack. No configuration. Just open and transform.**
-
-## ▸ Running Tests
-
-Claria includes a comprehensive unit test suite demonstrating production-quality code:
-
-```bash
-open tests/index.html  # Opens visual test runner
-```
 
 **Test Coverage:**
 - ✓ **45+ unit tests** covering all core functionality
@@ -153,12 +148,12 @@ All tests run in pure vanilla JavaScript with zero dependencies.
 claria/
 ├── public/             # Web application
 │   ├── index.html      # Main entry point
-│   └── src/
-│       ├── app.js      # Core application logic (2,400+ lines)
-│       └── styles.css  # Styling and animations
-├── tests/              # Test suite
-│   ├── index.html      # Visual test runner
-│   └── test.js         # 45+ unit tests
+│   ├── src/
+│   │   ├── app.js      # Core application logic (2,400+ lines)
+│   │   └── styles.css  # Styling and animations
+│   └── tests/          # Test suite
+│       ├── index.html  # Visual test runner
+│       └── test.js     # 81 unit tests
 ├── README.md           # Documentation
 ├── LICENSE             # MIT License
 ├── netlify.toml        # Deployment configuration
