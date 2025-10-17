@@ -247,7 +247,7 @@ ClariaTests.test('FallbackEngine.process - preserves meaning', () => {
 
 ClariaTests.test('FallbackEngine.replaceJargon - simple level', () => {
     const input = 'utilize this methodology to facilitate the process';
-    const result = FallbackEngine.replaceJargon(input, 'simple');
+    const result = FallbackEngine.replaceJargon(input, 'technical', 'simple');
 
     ClariaTests.assertTrue(result.includes('use'), 'Should replace utilize with use');
     ClariaTests.assertTrue(result.includes('way') || result.includes('method'),
@@ -297,6 +297,42 @@ ClariaTests.test('FallbackEngine.simplifyStructure - processes structure', () =>
 
     ClariaTests.assertType(result, 'string', 'Should return a string');
     ClariaTests.assertGreaterThan(result.length, 0, 'Should process sentence structure');
+});
+
+ClariaTests.test('FallbackEngine.applyPatternProcessing - complexity aware suffixes', () => {
+    const input = 'Patient has gastritis';
+
+    const simple = FallbackEngine.applyPatternProcessing(input, 'simple');
+    const standard = FallbackEngine.applyPatternProcessing(input, 'standard');
+    const educated = FallbackEngine.applyPatternProcessing(input, 'educated');
+
+    ClariaTests.assertTrue(simple.includes('swelling'), 'Simple level should use "swelling" for -itis');
+    ClariaTests.assertTrue(standard.includes('inflammation'), 'Standard level should use "inflammation" for -itis');
+    ClariaTests.assertTrue(educated.includes('inflammation'), 'Educated level should use "inflammation" for -itis');
+    ClariaTests.assertNotEqual(simple, standard, 'Simple and standard outputs should differ');
+});
+
+ClariaTests.test('FallbackEngine.applyPatternProcessing - complexity aware prefixes', () => {
+    const input = 'The system is hyperactive';
+
+    const simple = FallbackEngine.applyPatternProcessing(input, 'simple');
+    const standard = FallbackEngine.applyPatternProcessing(input, 'standard');
+    const educated = FallbackEngine.applyPatternProcessing(input, 'educated');
+
+    ClariaTests.assertTrue(simple.includes('too much'), 'Simple level should use "too much" for hyper-');
+    ClariaTests.assertTrue(standard.includes('above normal'), 'Standard level should use "above normal" for hyper-');
+    ClariaTests.assertTrue(educated.includes('elevated'), 'Educated level should use "elevated" for hyper-');
+});
+
+ClariaTests.test('FallbackEngine - complexity differentiation in full processing', () => {
+    const input = 'Patient has gastritis and hypertension';
+
+    const simple = FallbackEngine.process(input, 'medical', 'simple');
+    const educated = FallbackEngine.process(input, 'medical', 'educated');
+
+    ClariaTests.assertNotEqual(simple, educated, 'Simple and educated outputs should differ');
+    ClariaTests.assertTrue(simple.includes('high blood pressure'), 'Simple should simplify hypertension');
+    ClariaTests.assertTrue(educated.includes('elevated blood pressure'), 'Educated should use more precise terms');
 });
 
 // =============================================
