@@ -1564,6 +1564,9 @@
             // Initialize Chrome AI
             await this.initializeAI();
 
+            // Pre-load speech synthesis voices
+            this.preloadVoices();
+
             // Setup event listeners
             this.setupEventListeners();
 
@@ -1896,7 +1899,16 @@
 
             // Show output section
             outputSection.classList.remove('hidden');
-            outputSection.scrollIntoView({ behavior: 'smooth' });
+
+            // Scroll to output section accounting for sticky header
+            const header = document.querySelector('header');
+            const headerHeight = header ? header.offsetHeight : 0;
+            const outputPosition = outputSection.getBoundingClientRect().top + window.pageYOffset - headerHeight;
+
+            window.scrollTo({
+                top: outputPosition,
+                behavior: 'smooth'
+            });
         },
 
         /**
@@ -2208,7 +2220,7 @@
 
                 // Visual feedback
                 const originalText = this.elements.downloadBtn.innerHTML;
-                this.elements.downloadBtn.innerHTML = '<span class="btn-icon">✅</span> Downloaded!';
+                this.elements.downloadBtn.innerHTML = 'Downloaded!';
 
                 setTimeout(() => {
                     this.elements.downloadBtn.innerHTML = originalText;
@@ -2219,48 +2231,94 @@
             }
         },
 
+        preloadVoices() {
+            // Pre-load speech synthesis voices at initialization
+            // This ensures voices are available immediately when user clicks Listen
+            const loadVoices = () => {
+                const voices = speechSynthesis.getVoices();
+                if (voices.length > 0) {
+                    console.log(`✅ Loaded ${voices.length} speech synthesis voices`);
+
+                    // Check if Daniel (Claria's primary voice) is available
+                    const daniel = voices.find(v => v.name.includes('Daniel'));
+                    if (daniel) {
+                        console.log('🎤 Daniel voice available (Claria primary voice):', daniel.name);
+                    } else {
+                        console.warn('⚠️ Daniel voice not available, will use fallback');
+                        // Log available fallback voices
+                        const fallbacks = ['Alex', 'Google US English', 'Microsoft David', 'Samantha'];
+                        const available = voices.filter(v =>
+                            fallbacks.some(fb => v.name.includes(fb))
+                        );
+                        if (available.length > 0) {
+                            console.log('Available fallback voices:', available.map(v => v.name).join(', '));
+                        }
+                    }
+                }
+            };
+
+            // Try to load voices immediately
+            loadVoices();
+
+            // Also set up listener in case voices load later
+            if (speechSynthesis.onvoiceschanged !== undefined) {
+                speechSynthesis.onvoiceschanged = loadVoices;
+            }
+        },
+
         speakText() {
             const text = this.elements.output.textContent;
+            const speakBtn = this.elements.speakBtn;
 
             if (!text) {
                 this.showError('No text to speak');
                 return;
             }
 
-            // Stop any current speech
-            speechSynthesis.cancel();
+            // Check if speech is currently active
+            if (speechSynthesis.speaking) {
+                // Stop the speech
+                speechSynthesis.cancel();
 
+                // Reset button state
+                const speakIcon = speakBtn.querySelector('svg')?.outerHTML || '';
+                speakBtn.innerHTML = speakIcon + ' Listen';
+                speakBtn.disabled = false;
+                return;
+            }
+
+            // Speak the text (voices are already preloaded at init)
             try {
                 const utterance = new SpeechSynthesisUtterance(text);
 
-                // Enhanced voice settings for clarity
-                utterance.rate = 0.85;     // Slightly slower for clarity
-                utterance.pitch = 1.0;     // Normal pitch
+                // Enhanced voice settings for natural, deeper voice
+                utterance.rate = 0.9;      // Natural speaking pace
+                utterance.pitch = 0.8;     // Lower pitch for deeper, more natural voice
                 utterance.volume = 1.0;    // Full volume
 
-                // Enhanced voice selection for maximum clarity
+                // Voice selection - Daniel is the perfect voice for Claria
                 const voices = speechSynthesis.getVoices();
-
-                // Priority order: Local > Google > Apple > Microsoft > Any English
                 let selectedVoice = null;
 
-                // First try local high-quality voices
+                // Priority 1: Daniel voice (UK English male - perfect for Claria)
                 selectedVoice = voices.find(voice =>
-                    voice.lang.startsWith('en') &&
-                    voice.localService &&
-                    (voice.name.includes('Natural') || voice.name.includes('Enhanced') || voice.name.includes('Premium'))
+                    voice.name.includes('Daniel') &&
+                    voice.lang.startsWith('en')
                 );
 
-                // Then try system default voices
+                // Fallback: If Daniel is not available, try other quality voices
                 if (!selectedVoice) {
-                    selectedVoice = voices.find(voice =>
-                        voice.lang.startsWith('en') &&
-                        voice.localService &&
-                        voice.default
-                    );
+                    const fallbackVoices = ['Alex', 'Google US English', 'Microsoft David', 'Samantha'];
+                    for (const voiceName of fallbackVoices) {
+                        selectedVoice = voices.find(voice =>
+                            voice.name.includes(voiceName) &&
+                            voice.lang.startsWith('en')
+                        );
+                        if (selectedVoice) break;
+                    }
                 }
 
-                // Then try any local English voice
+                // If still no voice, try any local English voice
                 if (!selectedVoice) {
                     selectedVoice = voices.find(voice =>
                         voice.lang.startsWith('en') &&
@@ -2268,23 +2326,24 @@
                     );
                 }
 
-                // Finally, any English voice
+                // Last resort: any English voice
                 if (!selectedVoice) {
                     selectedVoice = voices.find(voice => voice.lang.startsWith('en'));
                 }
 
                 if (selectedVoice) {
                     utterance.voice = selectedVoice;
-                    console.log('Selected voice:', selectedVoice.name, selectedVoice.lang);
+                    console.log('🎤 Speaking with voice:', selectedVoice.name, selectedVoice.lang);
+                } else {
+                    console.warn('No English voice found, using system default');
                 }
 
-                // Visual feedback without emoji
-                const speakBtn = this.elements.speakBtn;
+                // Visual feedback
                 const originalContent = speakBtn.innerHTML;
                 const speakIcon = speakBtn.querySelector('svg').outerHTML;
 
-                speakBtn.innerHTML = speakIcon + ' Speaking...';
-                speakBtn.disabled = true;
+                speakBtn.innerHTML = speakIcon + ' Speaking... (tap to stop)';
+                speakBtn.disabled = false; // Keep enabled so user can click to stop
 
                 utterance.onend = () => {
                     speakBtn.innerHTML = originalContent;
@@ -2292,16 +2351,36 @@
                 };
 
                 utterance.onerror = (event) => {
-                    console.error('Speech synthesis error:', event);
+                    console.error('Speech synthesis error details:', {
+                        error: event.error,
+                        type: event.type,
+                        charIndex: event.charIndex,
+                        elapsedTime: event.elapsedTime,
+                        name: event.name,
+                        utterance: event.utterance
+                    });
                     speakBtn.innerHTML = originalContent;
                     speakBtn.disabled = false;
-                    alert('Speech synthesis failed');
+
+                    // Provide more helpful error message
+                    const errorMsg = event.error === 'interrupted'
+                        ? 'Speech was stopped'
+                        : event.error === 'canceled'
+                        ? 'Speech was canceled'
+                        : event.error === 'not-allowed'
+                        ? 'Speech permission denied or not supported'
+                        : event.error === 'network'
+                        ? 'Network error during speech'
+                        : `Speech failed: ${event.error || 'Unknown error'}`;
+
+                    // Only show alert if it's not just interrupted or canceled
+                    if (event.error !== 'interrupted' && event.error !== 'canceled') {
+                        console.warn('Showing error to user:', errorMsg);
+                        this.showError(errorMsg);
+                    }
                 };
 
-                // Small delay to ensure voices are loaded
-                setTimeout(() => {
-                    speechSynthesis.speak(utterance);
-                }, 100);
+                speechSynthesis.speak(utterance);
             } catch (error) {
                 console.error('Speech synthesis error:', error);
                 this.showError('Text-to-speech not supported');
