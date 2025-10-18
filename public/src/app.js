@@ -1971,7 +1971,14 @@
             }
 
             readabilitySection.innerHTML = `
-                <h3 class="section-subtitle">📊 Readability Improvement</h3>
+                <h3 class="section-subtitle">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 20px; height: 20px; display: inline-block; vertical-align: middle; margin-right: 8px;">
+                        <line x1="18" y1="20" x2="18" y2="10"/>
+                        <line x1="12" y1="20" x2="12" y2="4"/>
+                        <line x1="6" y1="20" x2="6" y2="14"/>
+                    </svg>
+                    Readability Improvement
+                </h3>
                 <div class="readability-comparison">
                     <div class="readability-before">
                         <div class="readability-label">Before</div>
@@ -1984,7 +1991,12 @@
                             <span>${before.avgSyllablesPerWord} syllables/word</span>
                         </div>
                     </div>
-                    <div class="readability-arrow">→</div>
+                    <div class="readability-arrow">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 24px; height: 24px;">
+                            <line x1="5" y1="12" x2="19" y2="12"/>
+                            <polyline points="12,5 19,12 12,19"/>
+                        </svg>
+                    </div>
                     <div class="readability-after">
                         <div class="readability-label">After</div>
                         <div class="grade-level grade-${after.gradeLevel > 12 ? 'high' : after.gradeLevel > 6 ? 'medium' : 'low'}">
@@ -1998,9 +2010,12 @@
                     </div>
                 </div>
                 <div class="improvement-badge">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 18px; height: 18px; display: inline-block; vertical-align: middle; margin-right: 6px;">
+                        <polyline points="20,6 9,17 4,12"/>
+                    </svg>
                     ${before.gradeLevel > after.gradeLevel
-                        ? `✅ Reduced by ${before.gradeLevel - after.gradeLevel} grade levels`
-                        : '✅ Maintained readability'}
+                        ? `Reduced by ${before.gradeLevel - after.gradeLevel} grade levels`
+                        : 'Maintained readability'}
                 </div>
             `;
 
@@ -2052,14 +2067,26 @@
 
             const readabilityHTML = `
                 <div id="readability-section" class="enhanced-section" style="margin-top: 2rem;">
-                    <h3 class="section-subtitle">📊 Readability Improvement</h3>
+                    <h3 class="section-subtitle">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 20px; height: 20px; display: inline-block; vertical-align: middle; margin-right: 8px;">
+                            <line x1="18" y1="20" x2="18" y2="10"/>
+                            <line x1="12" y1="20" x2="12" y2="4"/>
+                            <line x1="6" y1="20" x2="6" y2="14"/>
+                        </svg>
+                        Readability Improvement
+                    </h3>
                     <div style="display: flex; gap: 2rem; align-items: center; padding: 1rem; background: #f9fafb; border-radius: 8px;">
                         <div style="flex: 1; text-align: center;">
                             <div style="color: #6b7280; margin-bottom: 0.5rem;">Before</div>
                             <div style="font-size: 2rem; font-weight: bold; color: #ef4444;">Grade ${before.gradeLevel}</div>
                             <div style="color: #6b7280;">${before.complexity}</div>
                         </div>
-                        <div style="font-size: 2rem;">→</div>
+                        <div style="font-size: 2rem;">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 32px; height: 32px;">
+                                <line x1="5" y1="12" x2="19" y2="12"/>
+                                <polyline points="12,5 19,12 12,19"/>
+                            </svg>
+                        </div>
                         <div style="flex: 1; text-align: center;">
                             <div style="color: #6b7280; margin-bottom: 0.5rem;">After</div>
                             <div style="font-size: 2rem; font-weight: bold; color: #10b981;">Grade ${after.gradeLevel}</div>
@@ -2067,7 +2094,10 @@
                         </div>
                     </div>
                     <div style="text-align: center; margin-top: 1rem; color: #059669; font-weight: 600;">
-                        ✅ ${before.gradeLevel > after.gradeLevel ? `Improved by ${before.gradeLevel - after.gradeLevel} grade levels!` : 'Maintained readability'}
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 18px; height: 18px; display: inline-block; vertical-align: middle; margin-right: 6px;">
+                            <polyline points="20,6 9,17 4,12"/>
+                        </svg>
+                        ${before.gradeLevel > after.gradeLevel ? `Improved by ${before.gradeLevel - after.gradeLevel} grade levels!` : 'Maintained readability'}
                     </div>
                 </div>
             `;
