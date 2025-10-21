@@ -1325,10 +1325,19 @@
             const selectedSuffixes = suffixMappings[complexityLevel] || suffixMappings.standard;
             const selectedPrefixes = prefixMappings[complexityLevel] || prefixMappings.standard;
 
+            // Common words to exclude from pattern processing
+            const excludeWords = ['pressure', 'present', 'preset', 'preview', 'prelude', 'premise',
+                                  'super', 'supper', 'hyper', 'inter', 'interest', 'internal',
+                                  'multitude', 'multiple', 'gastric', 'postage', 'poster'];
+
             // Process suffix patterns
             Object.keys(selectedSuffixes).forEach(suffix => {
                 const pattern = new RegExp(`\\b(\\w+)${suffix}\\b`, 'gi');
                 result = result.replace(pattern, (match, root) => {
+                    // Skip if the full word is in exclude list or root is too short
+                    if (excludeWords.includes(match.toLowerCase()) || root.length < 4) {
+                        return match;
+                    }
                     return `${root} ${selectedSuffixes[suffix]}`;
                 });
             });
@@ -1337,6 +1346,10 @@
             Object.keys(selectedPrefixes).forEach(prefix => {
                 const pattern = new RegExp(`\\b${prefix}(\\w+)\\b`, 'gi');
                 result = result.replace(pattern, (match, root) => {
+                    // Skip if the full word is in exclude list or root is too short
+                    if (excludeWords.includes(match.toLowerCase()) || root.length < 4) {
+                        return match;
+                    }
                     return `${selectedPrefixes[prefix]} ${root}`;
                 });
             });
